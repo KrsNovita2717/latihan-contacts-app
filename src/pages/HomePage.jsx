@@ -1,8 +1,9 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ContactList from '../components/ContactList';
-import { deleteContact, getContacts } from '../utils/data';
 import Searchbar from '../components/Searchbar';
+import { getContacts, deleteContact } from '../utils/api';
+import { LocaleConsumer } from '../contexts/LocaleContext';
 
 function HomePageWrapper() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,20 +22,31 @@ class HomePage extends React.Component {
     super(props);
  
     this.state = {
-      contacts: getContacts(),
+      contacts: [],
       keyword: props.defaultKeyword || '',
     }
  
     this.onDeleteHandler = this.onDeleteHandler.bind(this);
     this.onKeywordChangeHandler = this.onKeywordChangeHandler.bind(this);
   }
- 
-  onDeleteHandler(id) {
-    deleteContact(id);
- 
+
+  async componentDidMount() {
+    const { data } = await getContacts();
+
     this.setState(() => {
       return {
-        contacts: getContacts(),
+        contacts: data
+      }
+    })
+  }
+ 
+  async onDeleteHandler(id) {
+    await deleteContact(id);
+ 
+    const { data } = await getContacts();
+    this.setState(() => {
+      return {
+        contacts: data,
       }
     });
   }
@@ -57,11 +69,19 @@ class HomePage extends React.Component {
     });
 
     return (
-      <section>
-        <Searchbar keyword={this.state.keyword} keywordChange={this.onKeywordChangeHandler} />
-        <h2>Daftar Kontak</h2>
-        <ContactList contacts={contacts} onDelete={this.onDeleteHandler} />
-      </section>
+      <LocaleConsumer>
+        {
+          ({ locale }) => {
+            return (
+              <section>
+                <Searchbar keyword={this.state.keyword} keywordChange={this.onKeywordChangeHandler} />
+                <h2>{locale === 'id' ? 'Daftar Kontak' : 'Contacts List'}</h2>
+                <ContactList contacts={contacts} onDelete={this.onDeleteHandler} />
+              </section>
+            )
+          }
+        }
+      </LocaleConsumer>
     )
   }
 }
